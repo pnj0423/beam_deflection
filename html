@@ -1,0 +1,1266 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Beam Deflection Calculator</title>
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        font-family: Arial, "Noto Sans KR", sans-serif;
+        background: #f3f5f8;
+        color: #1f2937;
+    }
+
+    header {
+        background: #172033;
+        color: white;
+        padding: 24px;
+        text-align: center;
+    }
+
+    header h1 {
+        margin: 0;
+        font-size: 28px;
+    }
+
+    header p {
+        margin: 8px 0 0;
+        color: #cbd5e1;
+    }
+
+    .container {
+        max-width: 1250px;
+        margin: 25px auto;
+        padding: 0 20px;
+    }
+
+    .grid {
+        display: grid;
+        grid-template-columns: 400px 1fr;
+        gap: 20px;
+    }
+
+    .card {
+        background: white;
+        border-radius: 12px;
+        padding: 22px;
+        box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+        margin-bottom: 20px;
+    }
+
+    h2 {
+        margin-top: 0;
+        font-size: 20px;
+        border-bottom: 2px solid #e5e7eb;
+        padding-bottom: 10px;
+    }
+
+    h3 {
+        margin-bottom: 8px;
+        font-size: 15px;
+    }
+
+    label {
+        display: block;
+        margin-top: 13px;
+        margin-bottom: 5px;
+        font-weight: bold;
+        font-size: 14px;
+    }
+
+    input, select {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        font-size: 14px;
+        background: white;
+    }
+
+    input:focus, select:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 2px rgba(37,99,235,0.12);
+    }
+
+    .input-row {
+        display: grid;
+        grid-template-columns: 1fr 90px;
+        gap: 8px;
+    }
+
+    .unit-box {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f1f5f9;
+        border-radius: 6px;
+        font-size: 13px;
+    }
+
+    button {
+        width: 100%;
+        margin-top: 20px;
+        padding: 13px;
+        border: none;
+        border-radius: 7px;
+        background: #2563eb;
+        color: white;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    button:hover {
+        background: #1d4ed8;
+    }
+
+    .result-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+
+    .result {
+        background: #f8fafc;
+        border-left: 4px solid #2563eb;
+        padding: 15px;
+        border-radius: 6px;
+    }
+
+    .result-name {
+        color: #64748b;
+        font-size: 13px;
+    }
+
+    .result-value {
+        margin-top: 5px;
+        font-size: 20px;
+        font-weight: bold;
+    }
+
+    .result-position {
+        margin-top: 4px;
+        color: #64748b;
+        font-size: 12px;
+    }
+
+    #error {
+        display: none;
+        margin-top: 15px;
+        padding: 12px;
+        background: #fee2e2;
+        color: #991b1b;
+        border-radius: 6px;
+        font-size: 14px;
+    }
+
+    canvas {
+        width: 100%;
+        height: 330px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        background: white;
+    }
+
+    .formula {
+        background: #f8fafc;
+        padding: 12px;
+        border-radius: 6px;
+        margin-top: 12px;
+        font-size: 13px;
+        line-height: 1.7;
+    }
+
+    .note {
+        font-size: 12px;
+        color: #64748b;
+        line-height: 1.6;
+    }
+
+    .section-hidden {
+        display: none;
+    }
+
+    @media(max-width: 850px) {
+        .grid {
+            grid-template-columns: 1fr;
+        }
+
+        .result-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+</head>
+
+<body>
+
+<header>
+    <h1>Beam Deflection Calculator</h1>
+    <p>Euler–Bernoulli Beam Analysis · Point Load</p>
+</header>
+
+<div class="container">
+
+<div class="grid">
+
+<!-- ================= INPUT ================= -->
+
+<div>
+
+<div class="card">
+
+<h2>Beam & Load</h2>
+
+<label>Beam Type</label>
+<select id="beamType">
+    <option value="simply">Simply Supported</option>
+    <option value="cantilever">Cantilever</option>
+</select>
+
+<label>Beam Length L</label>
+<div class="input-row">
+    <input type="number" id="length" value="2" step="0.1">
+    <div class="unit-box">m</div>
+</div>
+
+<label>Point Load P</label>
+<div class="input-row">
+    <input type="number" id="load" value="1000" step="100">
+    <div class="unit-box">N</div>
+</div>
+
+<label>Load Position a (from left)</label>
+<div class="input-row">
+    <input type="number" id="loadPosition" value="1" step="0.1">
+    <div class="unit-box">m</div>
+</div>
+
+</div>
+
+
+<!-- MATERIAL -->
+
+<div class="card">
+
+<h2>Material</h2>
+
+<label>Material</label>
+<select id="material" onchange="updateMaterial()">
+    <option value="200">Steel</option>
+    <option value="69">Aluminum</option>
+    <option value="11">Wood</option>
+    <option value="116">Titanium</option>
+    <option value="custom">Custom</option>
+</select>
+
+<label>Young's Modulus E</label>
+
+<div class="input-row">
+<input type="number" id="young" value="200">
+<div class="unit-box">GPa</div>
+</div>
+
+</div>
+
+
+<!-- CROSS SECTION -->
+
+<div class="card">
+
+<h2>Cross Section</h2>
+
+<label>Cross Section Type</label>
+
+<select id="section" onchange="updateSectionInputs()">
+
+<option value="rectangle">Rectangle</option>
+<option value="circle">Solid Circle</option>
+<option value="hollowCircle">Hollow Circle</option>
+<option value="ibeam">I-Beam</option>
+<option value="hollowRectangle">Hollow Rectangle</option>
+
+</select>
+
+
+<!-- RECTANGLE -->
+
+<div id="rectangleInputs">
+
+<label>Width b</label>
+<div class="input-row">
+<input type="number" id="rectB" value="50">
+<div class="unit-box">mm</div>
+</div>
+
+<label>Height h</label>
+<div class="input-row">
+<input type="number" id="rectH" value="100">
+<div class="unit-box">mm</div>
+</div>
+
+</div>
+
+
+<!-- CIRCLE -->
+
+<div id="circleInputs" class="section-hidden">
+
+<label>Diameter d</label>
+<div class="input-row">
+<input type="number" id="circleD" value="50">
+<div class="unit-box">mm</div>
+</div>
+
+</div>
+
+
+<!-- HOLLOW CIRCLE -->
+
+<div id="hollowCircleInputs" class="section-hidden">
+
+<label>Outer Diameter D</label>
+<div class="input-row">
+<input type="number" id="outerD" value="60">
+<div class="unit-box">mm</div>
+</div>
+
+<label>Inner Diameter d</label>
+<div class="input-row">
+<input type="number" id="innerD" value="50">
+<div class="unit-box">mm</div>
+</div>
+
+</div>
+
+
+<!-- I BEAM -->
+
+<div id="ibeamInputs" class="section-hidden">
+
+<label>Total Height h</label>
+<div class="input-row">
+<input type="number" id="iH" value="150">
+<div class="unit-box">mm</div>
+</div>
+
+<label>Flange Width b</label>
+<div class="input-row">
+<input type="number" id="iB" value="100">
+<div class="unit-box">mm</div>
+</div>
+
+<label>Flange Thickness tf</label>
+<div class="input-row">
+<input type="number" id="iTf" value="10">
+<div class="unit-box">mm</div>
+</div>
+
+<label>Web Thickness tw</label>
+<div class="input-row">
+<input type="number" id="iTw" value="8">
+<div class="unit-box">mm</div>
+</div>
+
+</div>
+
+
+<!-- HOLLOW RECTANGLE -->
+
+<div id="hollowRectangleInputs" class="section-hidden">
+
+<label>Outer Width B</label>
+<div class="input-row">
+<input type="number" id="hrB" value="100">
+<div class="unit-box">mm</div>
+</div>
+
+<label>Outer Height H</label>
+<div class="input-row">
+<input type="number" id="hrH" value="150">
+<div class="unit-box">mm</div>
+</div>
+
+<label>Wall Thickness t</label>
+<div class="input-row">
+<input type="number" id="hrT" value="10">
+<div class="unit-box">mm</div>
+</div>
+
+</div>
+
+<button onclick="calculate()">Calculate</button>
+
+<div id="error"></div>
+
+</div>
+
+</div>
+
+
+<!-- ================= OUTPUT ================= -->
+
+<div>
+
+<div class="card">
+
+<h2>Results</h2>
+
+<div class="result-grid">
+
+<div class="result">
+<div class="result-name">Maximum Moment</div>
+<div class="result-value" id="maxMoment">—</div>
+<div class="result-position" id="momentPosition"></div>
+</div>
+
+<div class="result">
+<div class="result-name">Maximum Stress</div>
+<div class="result-value" id="maxStress">—</div>
+</div>
+
+<div class="result">
+<div class="result-name">Maximum Strain</div>
+<div class="result-value" id="maxStrain">—</div>
+</div>
+
+<div class="result">
+<div class="result-name">Maximum Deflection</div>
+<div class="result-value" id="maxDeflection">—</div>
+<div class="result-position" id="deflectionPosition"></div>
+</div>
+
+<div class="result">
+<div class="result-name">Second Moment of Area I</div>
+<div class="result-value" id="momentInertia">—</div>
+</div>
+
+<div class="result">
+<div class="result-name">Young's Modulus</div>
+<div class="result-value" id="youngResult">—</div>
+</div>
+
+</div>
+
+</div>
+
+
+<div class="card">
+
+<h2>Beam Visualization</h2>
+
+<canvas id="beamCanvas" width="800" height="330"></canvas>
+
+<p class="note">
+검은색 선: 변형 전 보 · 파란색 선: 계산된 처짐 형상을 시각적으로 확대하여 표시
+</p>
+
+</div>
+
+
+<div class="card">
+
+<h2>Calculation Model</h2>
+
+<div class="formula">
+
+<b>Euler–Bernoulli Beam Theory</b><br><br>
+
+Bending stress:<br>
+σ = Mc / I<br><br>
+
+Maximum strain:<br>
+ε = σ / E<br><br>
+
+Beam curvature:<br>
+EI · d²v/dx² = M(x)<br><br>
+
+여기서<br>
+E = Young's modulus<br>
+I = Second moment of area<br>
+M = Bending moment<br>
+c = Neutral axis에서 단면 최외곽까지의 거리
+
+</div>
+
+<p class="note">
+본 계산기는 선형 탄성, 작은 변형, 균질 재료 및 Euler–Bernoulli beam 가정을 사용합니다.
+전단 변형은 고려하지 않습니다.
+</p>
+
+</div>
+
+</div>
+
+</div>
+</div>
+
+
+<script>
+
+/* =========================================================
+   UI
+========================================================= */
+
+function updateMaterial() {
+
+    const material = document.getElementById("material").value;
+    const young = document.getElementById("young");
+
+    if(material !== "custom") {
+        young.value = material;
+        young.readOnly = true;
+    } else {
+        young.readOnly = false;
+    }
+}
+
+
+function updateSectionInputs() {
+
+    const ids = [
+        "rectangleInputs",
+        "circleInputs",
+        "hollowCircleInputs",
+        "ibeamInputs",
+        "hollowRectangleInputs"
+    ];
+
+    ids.forEach(id => {
+        document.getElementById(id).classList.add("section-hidden");
+    });
+
+    const section = document.getElementById("section").value;
+
+    document.getElementById(section + "Inputs")
+        .classList.remove("section-hidden");
+}
+
+
+/* =========================================================
+   CROSS SECTION
+========================================================= */
+
+function getSectionProperties() {
+
+    const type = document.getElementById("section").value;
+
+    let I;
+    let c;
+
+    if(type === "rectangle") {
+
+        const b = Number(document.getElementById("rectB").value) / 1000;
+        const h = Number(document.getElementById("rectH").value) / 1000;
+
+        if(b <= 0 || h <= 0)
+            throw new Error("Rectangle dimensions must be greater than zero.");
+
+        I = b * Math.pow(h,3) / 12;
+        c = h / 2;
+    }
+
+
+    else if(type === "circle") {
+
+        const d = Number(document.getElementById("circleD").value) / 1000;
+
+        if(d <= 0)
+            throw new Error("Circle diameter must be greater than zero.");
+
+        I = Math.PI * Math.pow(d,4) / 64;
+        c = d / 2;
+    }
+
+
+    else if(type === "hollowCircle") {
+
+        const D = Number(document.getElementById("outerD").value) / 1000;
+        const d = Number(document.getElementById("innerD").value) / 1000;
+
+        if(D <= 0 || d < 0)
+            throw new Error("Diameters must be valid positive values.");
+
+        if(d >= D)
+            throw new Error("Inner diameter must be smaller than outer diameter.");
+
+        I = Math.PI * (Math.pow(D,4) - Math.pow(d,4)) / 64;
+        c = D / 2;
+    }
+
+
+    else if(type === "ibeam") {
+
+        const h  = Number(document.getElementById("iH").value) / 1000;
+        const b  = Number(document.getElementById("iB").value) / 1000;
+        const tf = Number(document.getElementById("iTf").value) / 1000;
+        const tw = Number(document.getElementById("iTw").value) / 1000;
+
+        if(h <= 0 || b <= 0 || tf <= 0 || tw <= 0)
+            throw new Error("I-Beam dimensions must be greater than zero.");
+
+        if(2 * tf >= h)
+            throw new Error("Flange thickness is too large for the total beam height.");
+
+        if(tw >= b)
+            throw new Error("Web thickness must be smaller than flange width.");
+
+        /*
+            I = outer rectangle
+                - two rectangular voids
+        */
+
+        I =
+            b * Math.pow(h,3) / 12
+            -
+            (b - tw) * Math.pow(h - 2*tf,3) / 12;
+
+        c = h / 2;
+    }
+
+
+    else if(type === "hollowRectangle") {
+
+        const B = Number(document.getElementById("hrB").value) / 1000;
+        const H = Number(document.getElementById("hrH").value) / 1000;
+        const t = Number(document.getElementById("hrT").value) / 1000;
+
+        if(B <= 0 || H <= 0 || t <= 0)
+            throw new Error("Hollow rectangle dimensions must be greater than zero.");
+
+        if(2*t >= B || 2*t >= H)
+            throw new Error("Wall thickness is too large.");
+
+        I =
+            (
+                B * Math.pow(H,3)
+                -
+                (B - 2*t) * Math.pow(H - 2*t,3)
+            ) / 12;
+
+        c = H / 2;
+    }
+
+    return {I, c};
+}
+
+
+/* =========================================================
+   DEFLECTION FUNCTIONS
+========================================================= */
+
+function simplySupportedDeflection(x, P, L, a, E, I) {
+
+    const b = L - a;
+
+    if(x <= a) {
+
+        return -P * b * x *
+        (
+            L*L - b*b - x*x
+        )
+        /
+        (6 * L * E * I);
+
+    } else {
+
+        const u = L - x;
+
+        return -P * a * u *
+        (
+            L*L - a*a - u*u
+        )
+        /
+        (6 * L * E * I);
+    }
+}
+
+
+function cantileverDeflection(x, P, L, a, E, I) {
+
+    if(x <= a) {
+
+        return -P * x*x * (3*a - x)
+               /
+               (6 * E * I);
+
+    } else {
+
+        /*
+          Beyond the point load there is no curvature.
+          The beam continues along the tangent at x = a.
+        */
+
+        return -P * a*a * (3*x - a)
+               /
+               (6 * E * I);
+    }
+}
+
+
+/* =========================================================
+   CALCULATION
+========================================================= */
+
+function calculate() {
+
+    const errorBox = document.getElementById("error");
+
+    try {
+
+        errorBox.style.display = "none";
+
+        const beamType =
+            document.getElementById("beamType").value;
+
+        const L =
+            Number(document.getElementById("length").value);
+
+        const P =
+            Number(document.getElementById("load").value);
+
+        const a =
+            Number(document.getElementById("loadPosition").value);
+
+        const E =
+            Number(document.getElementById("young").value) * 1e9;
+
+
+        /* VALIDATION */
+
+        if(!Number.isFinite(L) || L <= 0)
+            throw new Error("Beam length must be greater than zero.");
+
+        if(!Number.isFinite(P) || P <= 0)
+            throw new Error("Point load must be greater than zero.");
+
+        if(!Number.isFinite(a) || a < 0 || a > L)
+            throw new Error("Load position must be between 0 and beam length.");
+
+        if(!Number.isFinite(E) || E <= 0)
+            throw new Error("Young's modulus must be greater than zero.");
+
+
+        const section = getSectionProperties();
+
+        const I = section.I;
+        const c = section.c;
+
+
+        let Mmax;
+        let momentX;
+
+
+        /* =========================================
+           MOMENT
+        ========================================= */
+
+        if(beamType === "simply") {
+
+            const b = L - a;
+
+            const RA = P * b / L;
+
+            Mmax = RA * a;
+
+            momentX = a;
+
+        } else {
+
+            Mmax = P * a;
+
+            momentX = 0;
+        }
+
+
+        /* =========================================
+           STRESS / STRAIN
+        ========================================= */
+
+        const stress =
+            Mmax * c / I;
+
+        const strain =
+            stress / E;
+
+
+        /* =========================================
+           DEFLECTION SEARCH
+        ========================================= */
+
+        const N = 1500;
+
+        let points = [];
+
+        let maxDef = 0;
+        let maxDefX = 0;
+
+
+        for(let i=0; i<=N; i++) {
+
+            const x = L * i / N;
+
+            let y;
+
+            if(beamType === "simply") {
+
+                y = simplySupportedDeflection(
+                    x,P,L,a,E,I
+                );
+
+            } else {
+
+                y = cantileverDeflection(
+                    x,P,L,a,E,I
+                );
+            }
+
+            points.push({x,y});
+
+            if(Math.abs(y) > Math.abs(maxDef)) {
+
+                maxDef = y;
+                maxDefX = x;
+            }
+        }
+
+
+        /* =========================================
+           OUTPUT
+        ========================================= */
+
+        document.getElementById("maxMoment").textContent =
+            formatEngineering(Mmax, "N·m");
+
+        document.getElementById("momentPosition").textContent =
+            "at x = " + momentX.toFixed(3) + " m";
+
+
+        document.getElementById("maxStress").textContent =
+            (stress / 1e6).toFixed(3) + " MPa";
+
+
+        document.getElementById("maxStrain").textContent =
+            strain.toExponential(4);
+
+
+        document.getElementById("maxDeflection").textContent =
+            formatDeflection(Math.abs(maxDef));
+
+
+        document.getElementById("deflectionPosition").textContent =
+            "at x = " + maxDefX.toFixed(3) + " m";
+
+
+        document.getElementById("momentInertia").textContent =
+            I.toExponential(4) + " m⁴";
+
+
+        document.getElementById("youngResult").textContent =
+            (E / 1e9).toFixed(2) + " GPa";
+
+
+        drawBeam(
+            beamType,
+            L,
+            a,
+            points,
+            maxDefX
+        );
+
+    }
+
+    catch(error) {
+
+        errorBox.textContent = error.message;
+        errorBox.style.display = "block";
+    }
+}
+
+
+/* =========================================================
+   FORMAT
+========================================================= */
+
+function formatDeflection(value) {
+
+    if(value < 0.001) {
+
+        return (value * 1e6).toFixed(2) + " μm";
+
+    } else if(value < 1) {
+
+        return (value * 1000).toFixed(3) + " mm";
+
+    } else {
+
+        return value.toFixed(4) + " m";
+    }
+}
+
+
+function formatEngineering(value, unit) {
+
+    if(Math.abs(value) >= 1000) {
+
+        return (value / 1000).toFixed(3) + " k" + unit;
+
+    }
+
+    return value.toFixed(3) + " " + unit;
+}
+
+
+/* =========================================================
+   VISUALIZATION
+========================================================= */
+
+function drawBeam(type, L, loadPos, points, maxDefX) {
+
+    const canvas =
+        document.getElementById("beamCanvas");
+
+    const ctx =
+        canvas.getContext("2d");
+
+
+    const W = canvas.width;
+    const H = canvas.height;
+
+
+    ctx.clearRect(0,0,W,H);
+
+
+    const left = 80;
+    const right = W - 70;
+
+    const beamY = 140;
+
+    const beamWidth =
+        right - left;
+
+
+    function mapX(x) {
+
+        return left +
+            x / L * beamWidth;
+    }
+
+
+    /* =========================================
+       ORIGINAL BEAM
+    ========================================= */
+
+    ctx.beginPath();
+
+    ctx.moveTo(left,beamY);
+    ctx.lineTo(right,beamY);
+
+    ctx.strokeStyle = "#111827";
+    ctx.lineWidth = 4;
+
+    ctx.stroke();
+
+
+    /* =========================================
+       SUPPORTS
+    ========================================= */
+
+    if(type === "simply") {
+
+        drawPinSupport(ctx,left,beamY);
+
+        drawRollerSupport(ctx,right,beamY);
+
+    } else {
+
+        drawFixedSupport(ctx,left,beamY);
+    }
+
+
+    /* =========================================
+       LOAD
+    ========================================= */
+
+    const loadX =
+        mapX(loadPos);
+
+    drawArrow(
+        ctx,
+        loadX,
+        beamY - 80,
+        loadX,
+        beamY - 10
+    );
+
+    ctx.fillStyle = "#dc2626";
+    ctx.font = "bold 14px Arial";
+    ctx.textAlign = "center";
+
+    ctx.fillText(
+        "P",
+        loadX,
+        beamY - 90
+    );
+
+
+    ctx.fillStyle = "#374151";
+    ctx.font = "12px Arial";
+
+    ctx.fillText(
+        "x = " + loadPos.toFixed(2) + " m",
+        loadX,
+        beamY - 100
+    );
+
+
+    /* =========================================
+       DEFORMED SHAPE
+    ========================================= */
+
+    let maxAbs = 0;
+
+    points.forEach(p => {
+
+        maxAbs =
+            Math.max(
+                maxAbs,
+                Math.abs(p.y)
+            );
+    });
+
+
+    /*
+      Automatic visual amplification.
+      The numerical value is NOT changed.
+    */
+
+    const visualHeight = 80;
+
+    const scale =
+        maxAbs > 0
+        ? visualHeight / maxAbs
+        : 1;
+
+
+    ctx.beginPath();
+
+
+    points.forEach((p,index) => {
+
+        const px =
+            mapX(p.x);
+
+        const py =
+            beamY - p.y * scale;
+
+        if(index === 0)
+            ctx.moveTo(px,py);
+        else
+            ctx.lineTo(px,py);
+    });
+
+
+    ctx.strokeStyle = "#2563eb";
+    ctx.lineWidth = 3;
+
+    ctx.stroke();
+
+
+    /* =========================================
+       MAX DEFLECTION MARK
+    ========================================= */
+
+    const nearest =
+        points.reduce((prev,curr) =>
+            Math.abs(curr.x-maxDefX)
+            <
+            Math.abs(prev.x-maxDefX)
+            ? curr
+            : prev
+        );
+
+
+    const maxPX =
+        mapX(nearest.x);
+
+    const maxPY =
+        beamY - nearest.y * scale;
+
+
+    ctx.beginPath();
+
+    ctx.arc(
+        maxPX,
+        maxPY,
+        5,
+        0,
+        Math.PI*2
+    );
+
+    ctx.fillStyle = "#2563eb";
+    ctx.fill();
+
+
+    ctx.fillStyle = "#2563eb";
+    ctx.font = "12px Arial";
+
+    ctx.fillText(
+        "Max deflection",
+        maxPX,
+        maxPY + 22
+    );
+
+
+    /* =========================================
+       DIMENSION
+    ========================================= */
+
+    ctx.fillStyle = "#374151";
+    ctx.textAlign = "center";
+    ctx.font = "13px Arial";
+
+    ctx.fillText(
+        "L = " + L.toFixed(2) + " m",
+        (left+right)/2,
+        beamY + 100
+    );
+}
+
+
+/* =========================================================
+   SUPPORT DRAWING
+========================================================= */
+
+function drawPinSupport(ctx,x,y) {
+
+    ctx.beginPath();
+
+    ctx.moveTo(x,y+5);
+    ctx.lineTo(x-18,y+35);
+    ctx.lineTo(x+18,y+35);
+    ctx.closePath();
+
+    ctx.strokeStyle = "#111827";
+    ctx.lineWidth = 2;
+
+    ctx.stroke();
+
+    ctx.beginPath();
+
+    ctx.moveTo(x-25,y+38);
+    ctx.lineTo(x+25,y+38);
+
+    ctx.stroke();
+}
+
+
+function drawRollerSupport(ctx,x,y) {
+
+    ctx.beginPath();
+
+    ctx.moveTo(x,y+5);
+    ctx.lineTo(x-18,y+30);
+    ctx.lineTo(x+18,y+30);
+    ctx.closePath();
+
+    ctx.strokeStyle = "#111827";
+    ctx.lineWidth = 2;
+
+    ctx.stroke();
+
+
+    ctx.beginPath();
+
+    ctx.arc(x-9,y+36,5,0,Math.PI*2);
+    ctx.arc(x+9,y+36,5,0,Math.PI*2);
+
+    ctx.stroke();
+
+
+    ctx.beginPath();
+
+    ctx.moveTo(x-25,y+43);
+    ctx.lineTo(x+25,y+43);
+
+    ctx.stroke();
+}
+
+
+function drawFixedSupport(ctx,x,y) {
+
+    ctx.beginPath();
+
+    ctx.moveTo(x,y-35);
+    ctx.lineTo(x,y+40);
+
+    ctx.strokeStyle = "#111827";
+    ctx.lineWidth = 5;
+
+    ctx.stroke();
+
+
+    ctx.lineWidth = 1;
+
+    for(let i=-30;i<=35;i+=10) {
+
+        ctx.beginPath();
+
+        ctx.moveTo(x,i+y);
+        ctx.lineTo(x-12,i+y+8);
+
+        ctx.stroke();
+    }
+}
+
+
+/* =========================================================
+   ARROW
+========================================================= */
+
+function drawArrow(ctx,x1,y1,x2,y2) {
+
+    ctx.strokeStyle = "#dc2626";
+    ctx.fillStyle = "#dc2626";
+    ctx.lineWidth = 3;
+
+
+    ctx.beginPath();
+
+    ctx.moveTo(x1,y1);
+    ctx.lineTo(x2,y2);
+
+    ctx.stroke();
+
+
+    ctx.beginPath();
+
+    ctx.moveTo(x2,y2);
+    ctx.lineTo(x2-7,y2-12);
+    ctx.lineTo(x2+7,y2-12);
+
+    ctx.closePath();
+    ctx.fill();
+}
+
+
+/* =========================================================
+   INITIALIZATION
+========================================================= */
+
+updateMaterial();
+updateSectionInputs();
+calculate();
+
+</script>
+
+</body>
+</html>
